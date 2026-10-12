@@ -7,6 +7,11 @@
  */
 import type { Job } from '../types/job';
 
+export interface JobFilters {
+    department?: string;
+    location?: string;
+}
+
 /** Return jobs sorted by posted date, newest first (does not mutate input). */
 export function sortByNewest(jobs: Job[]): Job[] {
     return [...jobs].sort(
@@ -29,4 +34,49 @@ export function formatPostedDate(iso: string): string {
         day: 'numeric',
         timeZone: 'UTC',
     });
+}
+
+/** Return unique department names from a set of jobs, sorted alphabetically. */
+export function getDepartments(jobs: Job[]): string[] {
+    return Array.from(new Set(jobs.map((job) => job.department)))
+        .filter((department) => department.trim().length > 0)
+        .sort((a, b) => a.localeCompare(b));
+}
+
+/** Return unique locations from a set of jobs, sorted alphabetically. */
+export function getLocations(jobs: Job[]): string[] {
+    return Array.from(new Set(jobs.map((job) => job.location)))
+        .filter((location) => location.trim().length > 0)
+        .sort((a, b) => a.localeCompare(b));
+}
+
+/** Filter jobs by department, location, or both. */
+export function filterJobs(
+    jobs: Job[],
+    departmentOrFilters: string | JobFilters = '',
+    location: string = '',
+): Job[] {
+    const filters: JobFilters =
+        typeof departmentOrFilters === 'string'
+            ? { department: departmentOrFilters, location }
+            : departmentOrFilters;
+
+    const resolvedDepartment = filters.department ?? '';
+    const resolvedLocation = filters.location ?? '';
+
+    return jobs.filter((job) => {
+        const matchesDepartment = !resolvedDepartment || job.department === resolvedDepartment;
+        const matchesLocation = !resolvedLocation || job.location === resolvedLocation;
+        return matchesDepartment && matchesLocation;
+    });
+}
+
+/** Filter jobs by department only. */
+export function filterJobsByDepartment(jobs: Job[], department: string = ''): Job[] {
+    return filterJobs(jobs, { department });
+}
+
+/** Filter jobs by location only. */
+export function filterJobsByLocation(jobs: Job[], location: string = ''): Job[] {
+    return filterJobs(jobs, { location });
 }

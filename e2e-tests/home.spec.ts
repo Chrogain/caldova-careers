@@ -45,6 +45,49 @@ test.describe('Open roles listing', () => {
         });
     }
 
+    test('filters roles by department', async ({ page }) => {
+        await page.goto('/?department=Technology');
+        await expect(page.getByTestId('department-filter')).toHaveValue('Technology');
+        await expect(page.getByTestId('role-card')).toHaveCount(2);
+        await expect(page.getByRole('heading', { name: 'Senior Frontend Engineer' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Data Platform Engineer' })).toBeVisible();
+    });
+
+    test('filters roles by location', async ({ page }) => {
+        await page.goto('/?location=Remote%20%28US%20%26%20Canada%29');
+        await expect(page.getByTestId('location-filter')).toHaveValue('Remote (US & Canada)');
+        await expect(page.getByTestId('role-card')).toHaveCount(2);
+        await expect(page.getByRole('heading', { name: 'Senior Frontend Engineer' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Data Platform Engineer' })).toBeVisible();
+    });
+
+    test('combines department and location filters', async ({ page }) => {
+        await page.goto('/?department=Technology&location=Remote%20%28US%20%26%20Canada%29');
+        await expect(page.getByTestId('department-filter')).toHaveValue('Technology');
+        await expect(page.getByTestId('location-filter')).toHaveValue('Remote (US & Canada)');
+        await expect(page.getByTestId('role-card')).toHaveCount(2);
+        await expect(page.getByRole('heading', { name: 'Senior Frontend Engineer' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Data Platform Engineer' })).toBeVisible();
+    });
+
+    test('resets filters back to the full list', async ({ page }) => {
+        await page.goto('/?department=Technology&location=Remote%20%28US%20%26%20Canada%29');
+        await page.getByTestId('reset-filters').click();
+        await expect(page).toHaveURL('/');
+        await expect(page.getByTestId('department-filter')).toHaveValue('');
+        await expect(page.getByTestId('location-filter')).toHaveValue('');
+        await expect(page.getByTestId('role-card')).toHaveCount(expectedRoleCount);
+    });
+
+    test('shows an empty state when no roles match the selected filters', async ({ page }) => {
+        await page.goto('/?department=Technology&location=Woodinville%2C%20WA%2C%20USA');
+        await expect(page.getByTestId('empty-state')).toBeVisible();
+        await expect(page.getByTestId('empty-state-text')).toHaveText(
+            'No roles match the selected filters. Try another department or location.',
+        );
+        await expect(page.getByTestId('role-card')).toHaveCount(0);
+    });
+
     test('has no automatically detectable accessibility violations', async ({ page }) => {
         await page.goto('/');
         const results = await new AxeBuilder({ page })
